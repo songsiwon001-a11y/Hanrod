@@ -221,22 +221,25 @@ var D=[]; // {q,a}
 var idf={},docs=[];
 var pending=null; // {q,wrong}
 var DJ=[],game=null;
+function polite(s){return s.replace(/아니다([.]|$)/g,'아니에요$1').replace(/([가-힣])이다([.]|$)/g,function(m,c,e){return c+((c.charCodeAt(0)-44032)%28?'이에요':'예요')+e}).replace(/([했였었았됐겠])다([.]|$)/g,'$1어요$2').replace(/한다([.]|$)/g,'해요$1').replace(/된다([.]|$)/g,'돼요$1').replace(/있다([.]|$)/g,'있어요$1').replace(/없다([.]|$)/g,'없어요$1').replace(/([가-힣])다([.]|$)/g,'$1다고 해요$2')}
+function infoQ(t){return /[?？]|뭐야|뭐니|뭔데|무엇|누구|어디|언제|왜|어떻게|알려|설명|이란|what|who|where|when|why|how|tell me|explain/i.test(t)||/^[가-힣A-Za-z0-9]{2,12}$/.test(t.trim())}
+function showAns(r,t){var q={text:t,match:r.q};say((r.sim<0.9&&norm(r.q)!==norm(t)?'(‘'+r.q+'’(으)로 이해했어요)\n':'')+r.a,'ai',wrongBtn(q,r.i))}
 function tmo(p){return Promise.race([p,new Promise(function(r){setTimeout(function(){r(null)},7000)})])}
 function ddg(q){return fetch('https://api.duckduckgo.com/?q='+encodeURIComponent(q)+'&format=json&no_html=1&skip_disambig=1').then(function(r){return r.json()}).then(function(j){var rt=j.RelatedTopics&&j.RelatedTopics[0],a=j.AbstractText||j.Answer||(rt&&rt.Text);return a?{t:String(a),u:j.AbstractURL||(rt&&rt.FirstURL)||'',s:'DuckDuckGo'}:null})}
 function wiki(q){var h=isKo(q)?'ko':'en';return fetch('https://'+h+'.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch='+encodeURIComponent(q)+'&gsrlimit=1&prop=extracts&exintro=1&explaintext=1&exsentences=2&format=json&origin=*').then(function(r){return r.json()}).then(function(j){var p=j.query&&j.query.pages;if(!p)return null;var x=p[Object.keys(p)[0]];return x&&x.extract?{t:x.extract,u:'https://'+h+'.wikipedia.org/wiki/'+encodeURIComponent(x.title.replace(/ /g,'_')),s:'위키백과'}:null})}
 function unkMsg(t){return isKo(t)?'아직 모르는 말이에요. 뭐라고 대답하면 좋을까요? 다음 메시지로 알려 주세요. 아래 검색 링크로 찾은 답을 알려 주셔도 돼요.':'I don’t know that yet. What should I answer? Tell me in your next message. You can use the search links below.'}
-function webSearch(t,sl,forced){
+function webSearch(t,sl,forced,fb){
  var q=t.replace(/[?？]/g,'').replace(/^(검색|search)[: ]+/i,'').replace(/[ ]*(검색해 ?줘|검색)$/,'').replace(/(이|가|은|는|을|를)? ?(뭐야|뭐니|뭔데|누구야|누구니|알려 ?줘)$/,'').replace(/^(what is|who is|tell me about) /i,'').trim()||t;
  var m=say('🔎 인터넷에서 찾아보는 중…','ai');
  var fs=isKo(q)?[wiki,ddg]:[ddg,wiki];
  function tryN(i){if(i>=fs.length)return Promise.resolve(null);var p;try{p=fs[i](q)}catch(e){p=Promise.resolve(null)}return tmo(p).catch(function(){return null}).then(function(x){return x||tryN(i+1)})}
  tryN(0).then(function(x){
-  if(x){pending=null;var txt=x.t.length>300?x.t.slice(0,300)+'…':x.t;m.textContent=txt+'\n— '+x.s;
+  if(x){pending=null;var raw=isKo(x.t)?polite(x.t):x.t,txt=raw.length>300?raw.slice(0,300)+'…':raw;m.textContent=(isKo(t)?'찾아봤어요! ':'Here’s what I found. ')+txt+'\n— '+x.s;
    var s=document.createElement('small'),b=document.createElement('button');b.textContent='🎓 이 답 배우기';
    b.onclick=function(){learn(t,txt);commit();b.disabled=true;b.textContent='✅ 배웠어요'};s.appendChild(b);
    if(x.u){var a=document.createElement('a');a.href=x.u;a.target='_blank';a.rel='noopener';a.textContent=' 출처';s.appendChild(a)}
    m.appendChild(s)}
-  else{m.textContent=forced?'검색 결과를 가져오지 못했어요. 이 페이지에서는 외부 접속이 막혀 있을 수 있어요. 아래 링크로 직접 검색해 보세요.':unkMsg(t);m.appendChild(sl)}
+  else if(fb){m.parentNode&&m.parentNode.removeChild(m);fb()}else{m.textContent=forced?'검색 결과를 가져오지 못했어요. 이 페이지에서는 외부 접속이 막혀 있을 수 있어요. 아래 링크로 직접 검색해 보세요.':unkMsg(t);m.appendChild(sl)}
   log.scrollTop=log.scrollHeight})}
 var JC='ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ',JV='ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ',JF=' ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ';
 function jamo(s){return Array.prototype.map.call(s,function(h){var c=h.charCodeAt(0)-44032;if(c<0||c>11171)return h;var f=c%28;return JC[Math.floor(c/588)]+JV[Math.floor(c%588/28)]+(f?JF[f]:'')}).join('')}
@@ -342,7 +345,7 @@ function send(){
  if(pending){var p=pending;pending=null;learn(p.q,t);commit();
   say(isKo(p.q)?"배웠어요! 이제 \""+p.q+"\"에 그렇게 대답할게요. 🎓":"Learned! I’ll answer that from now on. 🎓","ai");return}
  var r=answer(t);
- if(r&&r.a!==undefined){var q={text:t,match:r.q};say((r.sim<0.9&&norm(r.q)!==norm(t)?"(‘"+r.q+"’(으)로 이해했어요)\n":"")+r.a,"ai",wrongBtn(q,r.i))}
+ if(r&&r.a!==undefined&&r.sim<0.8&&infoQ(t)){var rr=r;webSearch(t,links(t),false,function(){showAns(rr,t)});return}if(r&&r.a!==undefined){var q={text:t,match:r.q};say((r.sim<0.9&&norm(r.q)!==norm(t)?"(‘"+r.q+"’(으)로 이해했어요)\n":"")+r.a,"ai",wrongBtn(q,r.i))}
  else{pending={q:t};var sl=links(t);webSearch(t,sl);return;say(isKo(t)?"아직 모르는 말이에요. 뭐라고 대답하면 좋을까요? 다음 메시지로 알려 주세요. 아래 검색 링크로 찾은 답을 알려 주셔도 돼요.":"I don’t know that yet. What should I answer? Tell me in your next message. You can use the search links below.","ai",sl)}}
 
 document.getElementById("send").onclick=send;
