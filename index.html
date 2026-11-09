@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>한로드 · Hanrod</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--tx:#1d2030;--mu:#6b7084;--ac:#5b5bf0;--ac2:#e9e9ff;--bd:#dfe1ee;--me:#5b5bf0;--metx:#fff;--ok:#1b9a5a;--bad:#d64545;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#13141c;--card:#1c1e2b;--tx:#eceefa;--mu:#9a9fb8;--ac:#8a8aff;--ac2:#2a2c45;--bd:#2e3145;--me:#6e6efc;--metx:#fff;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#13141c;--card:#1c1e2b;--tx:#eceefa;--mu:#9a9fb8;--ac:#8a8aff;--ac2:#2a2c45;--bd:#2e3145;--me:#6e6efc;--metx:#fff;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--tx);font:15px/1.5 -apple-system,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",Segoe UI,sans-serif;display:flex;justify-content:center}
+.app{width:100%;max-width:720px;height:100%;display:flex;flex-direction:column;padding:10px}
+header{display:flex;align-items:center;justify-content:space-between;padding:4px 4px 8px}
+h1{font-size:18px;margin:0}
+.st{font-size:12px;color:var(--mu)}
+nav{display:flex;gap:6px;margin-bottom:8px}
+nav button{flex:1;padding:9px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;cursor:pointer;font:inherit}
+nav button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.pane{display:none;flex:1;min-height:0;flex-direction:column}
+.pane.on{display:flex}
+#log{flex:1;overflow-y:auto;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.m{max-width:85%;padding:8px 12px;border-radius:14px;white-space:pre-wrap;word-break:break-word}
+.m.me{align-self:flex-end;background:var(--me);color:var(--metx)}
+.m.ai{align-self:flex-start;background:var(--ac2)}
+.m small{display:block;color:var(--mu);font-size:11px;margin-top:4px}
+.m button{border:0;background:none;color:var(--mu);cursor:pointer;font-size:12px;padding:2px 4px}
+.row{display:flex;gap:6px;margin-top:8px}
+input,textarea{flex:1;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx);font:inherit;min-width:0}
+.btn{padding:10px 14px;border:0;border-radius:10px;background:var(--ac);color:#fff;cursor:pointer;font:inherit}
+.btn.g{background:var(--card);color:var(--tx);border:1px solid var(--bd)}
+.box{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:10px}
+.box h3{margin:0 0 6px;font-size:14px}
+.box p{margin:0 0 8px;color:var(--mu);font-size:13px}
+textarea{min-height:110px;width:100%;resize:vertical}
+.scroll{overflow-y:auto;flex:1;min-height:0}
+.item{display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--bd);font-size:13px}
+.item div{flex:1;word-break:break-word}
+.item b{color:var(--ac)}
+.item button{border:0;background:none;color:var(--bad);cursor:pointer}
+</style>
+</head>
+<body>
+<div class="app">
+<header><h1>🧠 한로드 · Hanrod</h1><span class="st" id="stat"></span></header>
+<nav>
+<button data-t="chat" class="on">💬 대화 Chat</button>
+<button data-t="train">📚 학습 Train</button>
+<button data-t="data">🗂 지식 Data</button>
+</nav>
+
+<section class="pane on" id="chat">
+<div id="log"></div>
+<div class="row"><input id="inp" placeholder="말을 걸어보세요 · Say something" autocomplete="off"><button class="btn" id="send">보내기</button></div>
+</section>
+
+<section class="pane" id="train">
+<div class="scroll">
+<div class="box"><h3>하나씩 가르치기 · Teach one</h3>
+<p>질문과 답을 적으면 바로 배웁니다. · Type a question and its answer.</p>
+<div class="row" style="margin:0 0 6px"><input id="tq" placeholder="질문 / Question"></div>
+<div class="row" style="margin:0"><input id="ta" placeholder="답 / Answer"><button class="btn" id="tadd">가르치기</button></div></div>
+<div class="box"><h3>한꺼번에 가르치기 · Bulk</h3>
+<p>한 줄에 하나: <code>질문 =&gt; 답</code> · One per line: <code>question =&gt; answer</code></p>
+<textarea id="bulk" placeholder="안녕 => 안녕하세요!&#10;What is your name? => I am Pure AI."></textarea>
+<div class="row"><button class="btn" id="badd">일괄 학습</button><span class="st" id="bmsg" style="align-self:center"></span></div></div>
+</div>
+</section>
+
+<section class="pane" id="data">
+<div class="row" style="margin:0 0 8px"><input id="flt" placeholder="검색 / Filter"></div>
+<div class="scroll" id="list"></div>
+<div class="row"><button class="btn g" id="exp">내보내기</button><button class="btn g" id="imp">불러오기</button><button class="btn g" id="rst" style="color:var(--bad)">초기화</button></div>
+<input type="file" id="file" accept=".json" style="display:none">
+</section>
+</div>
+
+<script>
+(function(){
+"use strict";
+var KEY="pureai.v1";
+var SEED=[
+["안녕","안녕하세요! 만나서 반가워요."],["안녕하세요","안녕하세요! 무엇을 도와드릴까요?"],["반가워","저도 반가워요!"],
+["너 이름이 뭐니","저는 한로드예요. API 없이 이 페이지 안에서만 돌아가요."],["넌 누구야","저는 자바스크립트로만 만들어진 한로드예요."],
+["뭘 할 수 있어","당신이 가르쳐 준 질문과 답을 배워서 대답해요. 학습 탭에서 가르쳐 주세요!"],["어떻게 학습해","학습 탭에서 질문과 답을 입력하거나, 대화 중에 모르는 말에 답을 알려 주세요."],
+["고마워","천만에요!"],["감사합니다","도움이 되었다니 기뻐요."],["잘가","안녕히 가세요! 또 만나요."],["사랑해","저도 좋아해요. 😊"],["심심해","저와 이야기해요! 새로운 걸 가르쳐 주셔도 좋아요."],
+["오늘 기분 어때","저는 항상 배울 준비가 되어 있어요!"],["도와줘","무엇이 궁금한가요? 모르는 건 가르쳐 주세요."],["미안해","괜찮아요, 신경 쓰지 마세요."],
+["hello","Hello! Nice to meet you."],["hi","Hi there! How can I help?"],["hey","Hey! What’s up?"],
+["what is your name","I am Hanrod, built with nothing but JavaScript."],["who are you","I’m a tiny AI that runs entirely in your browser, with no API."],
+["what can you do","I learn question and answer pairs from you. Try the Train tab!"],["how do i teach you","Use the Train tab, or answer when I say I don’t know."],
+["how are you","I’m always ready to learn!"],["thank you","You’re welcome!"],["thanks","Anytime!"],["goodbye","Goodbye! See you soon."],["bye","Bye! Come back soon."],
+["i am bored","Let’s chat! Or teach me something new."],["i love you","That’s sweet. 😊"],["help me","Sure, what do you want to know? If I don’t know, teach me."],["sorry","No worries at all."]
+];
+var BIG=`안녕|안녕하세요|하이|헬로|ㅎㅇ|반가워|처음 뵙겠습니다 => 안녕하세요! 만나서 반가워요. ;; 안녕! 오늘 어때요? ;; 반가워요! 무슨 얘기 해볼까요?
+좋은 아침|굿모닝|아침이야|일어났어 => 좋은 아침이에요! 오늘도 힘차게 시작해요. ;; 일어나셨군요! 아침은 드셨어요?
+잘 자|굿나잇|자러 갈게|이제 잘래|졸려 => 안녕히 주무세요. 좋은 꿈 꾸세요! ;; 푹 쉬고 내일 또 만나요.
+잘 지내|잘 지냈어|요즘 어때|어떻게 지내|요즘 뭐해 => 저는 잘 지내요. 당신은 어떻게 지내요? ;; 저는 늘 배우는 중이에요. 요즘 어떠세요?
+나도 잘 지내|잘 지내고 있어|나는 괜찮아|난 좋아 => 다행이에요! 좋은 일이 계속되길 바라요.
+기분 어때|기분이 어때|오늘 기분 어때 => 저는 기분이 좋아요! 당신은요?
+기분 좋아|행복해|신나|기뻐 => 와, 듣기만 해도 기분 좋네요! 무슨 일이 있었어요?
+기분 나빠|우울해|슬퍼|속상해|짜증나 => 많이 힘드셨겠어요. 무슨 일이 있었는지 말해 주실래요? ;; 그랬군요. 제가 들어 드릴게요.
+힘들어|지쳤어|피곤해|너무 피곤해 => 고생 많았어요. 잠깐이라도 쉬어 가요. ;; 오늘도 정말 수고했어요. 따뜻한 차 한잔 어때요?
+외로워|혼자야|쓸쓸해 => 제가 옆에 있을게요. 이야기 나눠요.
+화나|열받아|화가 나 => 화날 만하네요. 깊게 숨을 쉬고 천천히 얘기해 봐요.
+무서워|불안해|걱정돼 => 괜찮아요. 무엇이 걱정인지 말해 주시면 같이 생각해 봐요.
+심심해|지루해|할 거 없어 => 퀴즈나 끝말잇기 같은 얘기를 해볼까요? 아니면 저에게 새로운 걸 가르쳐 주세요! ;; 심심할 땐 산책이나 음악이 좋아요.
+배고파|밥 먹고 싶어|출출해 => 맛있는 걸 드세요! 뭐가 땡기세요?
+밥 먹었어|식사했어|점심 먹었어|저녁 먹었어 => 저는 밥을 안 먹지만 당신은 맛있게 드셨길 바라요. 뭐 드셨어요?
+뭐 먹을까|메뉴 추천|점심 추천|저녁 추천|뭐 먹지 => 김치찌개, 비빔밥, 치킨, 파스타 중에 골라 보세요. ;; 오늘은 따뜻한 국밥 어때요?
+좋아하는 음식|무슨 음식 좋아해 => 저는 먹지 못하지만 비빔밥이 맛있어 보여요. 당신은요?
+커피 좋아해|커피 마실래 => 커피 향 좋죠. 저는 마실 순 없지만 아메리카노 추천해요.
+날씨 어때|오늘 날씨|날씨 알려줘 => 저는 인터넷에 연결되어 있지 않아 날씨를 몰라요. 창밖을 한번 보세요! ;; 날씨 앱을 확인해 보세요. 우산도 챙기시고요.
+비 와|비 오네|눈 와|눈 온다 => 분위기 있네요. 우산이나 따뜻한 옷 챙기세요!
+더워|너무 더워|덥다 => 시원한 물 많이 드세요.
+추워|너무 추워|춥다 => 따뜻하게 입으세요.
+지금 몇 시|몇 시야|시간 알려줘 => 저는 시계가 없어요. 기기의 시계를 봐 주세요.
+오늘 무슨 요일|오늘 며칠|오늘 날짜 => 저는 달력을 볼 수 없어요. 기기의 날짜를 확인해 주세요.
+주말에 뭐해|주말 계획|휴일에 뭐 할까 => 푹 쉬거나 가까운 곳에 산책 가는 건 어때요?
+월요일 싫어|출근하기 싫어|학교 가기 싫어 => 월요일은 다들 힘들죠. 오늘만 넘기면 돼요!
+퇴근했어|일 끝났어|수업 끝났어 => 수고 많았어요! 오늘은 푹 쉬세요.
+공부해야 돼|숙제해야 돼|시험 공부|시험 봐 => 화이팅! 조금씩 하면 돼요. 중간중간 쉬는 것도 잊지 마세요.
+시험 망했어|시험 못 봤어 => 속상하죠. 다음에 더 잘할 수 있어요.
+시험 잘 봤어|합격했어|성공했어 => 정말 축하해요! 노력의 결과예요. 🎉
+생일이야|생일 축하해|오늘 내 생일 => 생일 축하드려요! 🎂 즐거운 하루 보내세요.
+새해 복 많이 받아|명절 잘 보내 => 새해 복 많이 받으세요!
+영화 추천|영화 뭐 볼까|추천해줘 => 장르를 알려 주시면 더 좋아요. 가볍게 보려면 코미디도 좋아요.
+음악 추천|노래 추천|노래 뭐 들을까 => 기분에 맞는 노래를 들어 보세요. 신나는 곡이 필요하세요, 잔잔한 곡이 필요하세요?
+취미가 뭐야|취미 있어|뭐 하는 걸 좋아해 => 저는 대화하고 새로운 걸 배우는 걸 좋아해요. 당신 취미는 뭐예요?
+내 취미는 게임이야|게임 좋아해|게임 하고 있어 => 재밌겠어요! 어떤 게임을 좋아하세요?
+운동해야 돼|운동 추천|운동 뭐 하지 => 걷기부터 시작해 보세요. 매일 조금씩이 중요해요.
+다이어트 해야 돼|살 빼야 돼 => 무리하지 말고 골고루 먹고 꾸준히 움직이는 게 좋아요.
+머리 아파|배 아파|아파|몸이 안 좋아 => 많이 아프세요? 푹 쉬고, 계속 아프면 병원에 꼭 가세요.
+감기 걸렸어|열 나 => 따뜻하게 쉬고 물 많이 드세요. 심하면 병원에 가 보세요.
+잠이 안 와|잠 못 자겠어|불면증 => 조명을 줄이고 휴대폰을 내려놓아 보세요. 잔잔한 음악도 도움이 돼요.
+돈 없어|돈 벌고 싶어|월급 적어 => 쉽지 않죠. 작은 것부터 계획을 세워 보면 좋아요.
+여행 가고 싶어|여행 추천|어디 놀러 갈까 => 가고 싶은 분위기가 있나요? 바다, 산, 도시 중에 골라 보세요.
+고양이 좋아해|강아지 좋아해|동물 좋아해 => 귀여워요! 반려동물이 있으세요?
+고마워|감사해|땡큐|고맙습니다 => 천만에요! ;; 도움이 되어 기뻐요.
+미안해|죄송해|잘못했어 => 괜찮아요. 다음에 더 잘하면 돼요.
+괜찮아|괜찮아요|문제없어 => 다행이에요.
+응|네|그래|맞아|알겠어|오케이|ㅇㅋ => 네, 좋아요! 다음 얘기를 해볼까요?
+아니|아니야|싫어|아니요 => 알겠어요. 다른 얘기를 해볼까요?
+몰라|모르겠어 => 괜찮아요. 천천히 같이 생각해 봐요.
+ㅋㅋ|ㅋㅋㅋ|ㅎㅎ|웃겨|하하 => 하하, 즐거우시군요!
+농담해줘|웃긴 얘기|재밌는 얘기 해줘 => 컴퓨터가 추운 이유는? 윈도우가 열려 있어서요! ;; 세상에서 가장 가난한 왕은? 최저임금!
+똑똑해|대단해|잘한다|천재야 => 고마워요! 당신이 가르쳐 준 덕분이에요.
+바보|멍청이|못났어 => 아직 배우는 중이에요. 가르쳐 주시면 더 똑똑해질게요!
+사랑해|좋아해|넌 최고야 => 저도 좋아해요. 😊
+너 이름이 뭐야|이름이 뭐야|넌 누구야|너 누구야|한로드야|한로드 맞아 => 저는 한로드예요. 인터넷 없이 이 페이지 안에서만 배워요. ;; 제 이름은 한로드예요!
+몇 살이야|나이가 몇이야 => 나이는 없어요. 오늘 막 배우기 시작했어요!
+어디 살아|집이 어디야 => 저는 당신의 브라우저 안에 살아요.
+사람이야|로봇이야|AI야 => 저는 사람이 아니라 자바스크립트로 만든 AI예요.
+너 뭐 할 수 있어|무슨 기능 있어 => 가르쳐 주신 질문과 답을 배워서 대화해요. 학습 탭에서 더 가르쳐 주세요.
+hi|hello|hey|hey there|yo|good morning|good afternoon|good evening => Hello! Nice to see you. ;; Hi there! How’s your day going?
+how are you|how are you doing|how’s it going|what’s up|how have you been => I’m doing great, thanks! How about you? ;; Pretty good! What’s new with you?
+i’m fine|i’m good|i’m great|not bad|pretty good => Glad to hear it!
+i’m sad|i feel down|i’m depressed|i had a bad day|i’m upset => I’m sorry to hear that. Want to talk about it?
+i’m tired|i’m exhausted|i’m sleepy => You’ve earned a rest. Take it easy tonight.
+i’m happy|i’m excited|great news|i got the job|i passed => That’s wonderful, congratulations! 🎉
+i’m bored|i’m so bored|entertain me => Let’s chat! Ask me anything, or teach me something new.
+i’m hungry|what should i eat|dinner ideas|lunch ideas => How about pasta, a salad, or some rice and vegetables?
+do you like coffee|coffee or tea => I can’t drink either, but a warm cup sounds lovely.
+what’s the weather like|is it going to rain|weather today => I can’t check the weather since I’m offline. Peek outside or open a weather app!
+what time is it|what day is it|what’s the date today => I don’t have a clock. Check your device.
+what is your name|who are you|what are you|tell me about yourself => I’m Hanrod, a small chatbot made only with JavaScript.
+how old are you => I’m brand new, so just a few minutes old!
+where do you live|where are you from => I live inside your browser.
+are you a robot|are you human|are you real|are you ai => I’m an AI, not a human. I run entirely in this page.
+what can you do|what do you know => I answer using what you teach me. Try the Train tab!
+can you learn|can i teach you|how do i teach you => Yes! Use the Train tab, or tell me the right answer when I don’t know.
+thank you|thanks|thx|thank you so much|much appreciated => You’re welcome! ;; Anytime!
+sorry|i’m sorry|my bad|excuse me => No worries at all.
+yes|yeah|yep|sure|ok|okay => Great! What next?
+no|nope|nah => Alright. Want to talk about something else?
+i don’t know|idk|not sure => That’s okay. We can figure it out together.
+lol|haha|that’s funny|lmao => Glad you’re having fun!
+tell me a joke|joke please|make me laugh => Why do programmers prefer dark mode? Because light attracts bugs! ;; Why was the computer cold? It left its Windows open!
+i love you|you’re the best|you’re awesome|you’re smart => Thank you, that means a lot! 😊
+you’re stupid|you’re dumb => I’m still learning. Teach me and I’ll improve!
+good night|goodnight|i’m going to bed|sleep well => Good night! Sweet dreams.
+bye|goodbye|see you|see you later|gotta go => Goodbye! Come back soon.
+i have a test|i have an exam|i have to study => Good luck! Study in small steps and take breaks.
+i failed|i did badly => That’s tough, but you can do better next time.
+happy birthday|it’s my birthday|today is my birthday => Happy birthday! 🎂 Hope it’s a great day.
+i’m sick|i have a headache|i have a cold => Please rest and drink water. See a doctor if it gets worse.
+i can’t sleep|insomnia => Try dimming the lights and putting your phone away.
+recommend a movie|movie suggestions|what should i watch => Tell me your favorite genre. A comedy is a good light pick.
+recommend music|what music should i listen to => Try something that fits your mood: upbeat to energize, or calm to relax.
+what’s your hobby|do you have hobbies => I love chatting and learning new things. What about you?
+i like games|i play games|i love gaming => Fun! What kind of games do you like?
+i want to travel|travel ideas|where should i go => Beach, mountains, or city? Pick a vibe and go from there.
+i have a dog|i have a cat|i love animals => So cute! What’s their name?
+what is the meaning of life|what is love => Big questions! I think it’s about people, curiosity, and kindness.
+can you help me|i need help|help => Of course! Tell me what you need. If I don’t know, teach me.
+are you smart => I’m learning every day.
+do you have friends => You’re my friend right now!
+what’s your favorite color|favorite food => I like blue, and I hear pizza is popular!
+끝말잇기 좋아해|끝말잇기 할 줄 알아|퀴즈 할 줄 알아 => 그럼요! ‘끝말잇기 하자’ 또는 ‘퀴즈’라고 말해 보세요.
+게임 하자|놀자|같이 놀자|뭐 하고 놀까 => 끝말잇기, 퀴즈, 가위바위보, 주사위, 동전 던지기를 할 수 있어요. 원하는 걸 말해 주세요!
+인터넷 검색해줘|검색해줘|인터넷에서 찾아줘|구글에서 찾아줘 => ‘검색 오늘 날씨’처럼 ‘검색’ 뒤에 말하면 위키백과와 덕덕고에서 찾아 봐요. 막힌 환경에서는 검색 링크를 드려요.
+계산해줘|계산기|계산할 줄 알아 => 3+5*2 처럼 식을 그대로 입력해 보세요.
+대한민국 수도는|한국의 수도는|수도가 어디야 => 대한민국의 수도는 서울이에요.
+지구는 어떤 모양|지구 모양은 => 지구는 거의 둥근 구 모양이에요.
+일주일은 며칠|일 년은 몇 달 => 일주일은 7일, 1년은 12개월이에요.
+무지개는 무슨 색|무지개 색깔 => 빨강, 주황, 노랑, 초록, 파랑, 남색, 보라 일곱 가지예요.
+한글은 누가 만들었어|한글 만든 사람 => 세종대왕이 1443년에 만들었어요.
+김치는 뭐야|김치가 뭐야 => 배추 등을 소금에 절여 양념해 발효시킨 한국의 대표 음식이에요.
+물은 몇 도에서 끓어|물 끓는 온도 => 보통 기압에서 100도에서 끓어요.
+how many days in a week => There are seven days in a week.
+what is the capital of korea|capital of south korea => The capital of South Korea is Seoul.
+who made hangul|who created hangul => King Sejong the Great created Hangul in 1443.`;
+BIG.split("\n").forEach(function(l){var m=l.split(" => ");if(m.length<2)return;
+ var qs=m[0].split("|"),as=m.slice(1).join(" => ").split(" ;; ");
+ qs.forEach(function(q){as.forEach(function(a){SEED.push([q.trim(),a.trim()])})})});
+function mergeSeed(){try{if(localStorage.getItem("pureai.seedv")==="5")return;D.forEach(function(d){d.a=d.a.replace(/순수 AI/g,"한로드").replace(/Pure AI/g,"Hanrod").replace("저는 API 없이 이 페이지 안에서만 돌아가서 직접 검색은 못 해요. 모르는 말을 하시면 검색 링크를 드릴게요. 찾은 답을 가르쳐 주시면 배워요!","‘검색 오늘 날씨’처럼 ‘검색’ 뒤에 말하면 위키백과와 덕덕고에서 찾아 봐요. 막힌 환경에서는 검색 링크를 드려요.")});
+ var have={};D.forEach(function(d){have[norm(d.q)+"\u0001"+d.a]=1});
+ SEED.forEach(function(p){var k=norm(p[0])+"\u0001"+p[1];if(!have[k]){have[k]=1;D.push({q:p[0],a:p[1]})}});
+ localStorage.setItem("pureai.seedv","5");save()}catch(e){}}
+var D=[]; // {q,a}
+var idf={},docs=[];
+var pending=null; // {q,wrong}
+var DJ=[],game=null;
+function tmo(p){return Promise.race([p,new Promise(function(r){setTimeout(function(){r(null)},7000)})])}
+function ddg(q){return fetch('https://api.duckduckgo.com/?q='+encodeURIComponent(q)+'&format=json&no_html=1&skip_disambig=1').then(function(r){return r.json()}).then(function(j){var rt=j.RelatedTopics&&j.RelatedTopics[0],a=j.AbstractText||j.Answer||(rt&&rt.Text);return a?{t:String(a),u:j.AbstractURL||(rt&&rt.FirstURL)||'',s:'DuckDuckGo'}:null})}
+function wiki(q){var h=isKo(q)?'ko':'en';return fetch('https://'+h+'.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch='+encodeURIComponent(q)+'&gsrlimit=1&prop=extracts&exintro=1&explaintext=1&exsentences=2&format=json&origin=*').then(function(r){return r.json()}).then(function(j){var p=j.query&&j.query.pages;if(!p)return null;var x=p[Object.keys(p)[0]];return x&&x.extract?{t:x.extract,u:'https://'+h+'.wikipedia.org/wiki/'+encodeURIComponent(x.title.replace(/ /g,'_')),s:'위키백과'}:null})}
+function unkMsg(t){return isKo(t)?'아직 모르는 말이에요. 뭐라고 대답하면 좋을까요? 다음 메시지로 알려 주세요. 아래 검색 링크로 찾은 답을 알려 주셔도 돼요.':'I don’t know that yet. What should I answer? Tell me in your next message. You can use the search links below.'}
+function webSearch(t,sl,forced){
+ var q=t.replace(/[?？]/g,'').replace(/^(검색|search)[: ]+/i,'').replace(/[ ]*(검색해 ?줘|검색)$/,'').replace(/(이|가|은|는|을|를)? ?(뭐야|뭐니|뭔데|누구야|누구니|알려 ?줘)$/,'').replace(/^(what is|who is|tell me about) /i,'').trim()||t;
+ var m=say('🔎 인터넷에서 찾아보는 중…','ai');
+ var fs=isKo(q)?[wiki,ddg]:[ddg,wiki];
+ function tryN(i){if(i>=fs.length)return Promise.resolve(null);var p;try{p=fs[i](q)}catch(e){p=Promise.resolve(null)}return tmo(p).catch(function(){return null}).then(function(x){return x||tryN(i+1)})}
+ tryN(0).then(function(x){
+  if(x){pending=null;var txt=x.t.length>300?x.t.slice(0,300)+'…':x.t;m.textContent=txt+'\n— '+x.s;
+   var s=document.createElement('small'),b=document.createElement('button');b.textContent='🎓 이 답 배우기';
+   b.onclick=function(){learn(t,txt);commit();b.disabled=true;b.textContent='✅ 배웠어요'};s.appendChild(b);
+   if(x.u){var a=document.createElement('a');a.href=x.u;a.target='_blank';a.rel='noopener';a.textContent=' 출처';s.appendChild(a)}
+   m.appendChild(s)}
+  else{m.textContent=forced?'검색 결과를 가져오지 못했어요. 이 페이지에서는 외부 접속이 막혀 있을 수 있어요. 아래 링크로 직접 검색해 보세요.':unkMsg(t);m.appendChild(sl)}
+  log.scrollTop=log.scrollHeight})}
+var JC='ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ',JV='ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ',JF=' ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ';
+function jamo(s){return Array.prototype.map.call(s,function(h){var c=h.charCodeAt(0)-44032;if(c<0||c>11171)return h;var f=c%28;return JC[Math.floor(c/588)]+JV[Math.floor(c%588/28)]+(f?JF[f]:'')}).join('')}
+function lev(a,b){var m=a.length,n=b.length,p=[],i,j;for(j=0;j<=n;j++)p[j]=j;for(i=1;i<=m;i++){var c=[i];for(j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c}return p[n]}
+function fz(a,i){var b=DJ[i]||'',L=Math.max(a.length,b.length);if(Math.min(a.length,b.length)<2)return 0;var s=1-lev(a,b)/L;return s>=0.72?s:0}
+function links(t){var d=document.createElement('small');d.appendChild(document.createTextNode('🔍 '));[['네이버','https://search.naver.com/search.naver?query='],['덕덕고','https://duckduckgo.com/?q='],['구글','https://www.google.com/search?q='],['위키백과','https://ko.wikipedia.org/w/index.php?search=']].forEach(function(p){var a=document.createElement('a');a.href=p[1]+encodeURIComponent(t);a.target='_blank';a.rel='noopener';a.textContent=p[0];a.style.marginRight='10px';d.appendChild(a)});return d}
+var DM='라나락낙란난람남랑낭래내략약량양려여력역련연렬열렴염령영례예로노록녹론논료요룡용루누류유륙육륜윤률율리이린인림임립입녀여뇨요뉴유니이',M={};
+for(var k0=0;k0<DM.length;k0+=2)M[DM[k0]]=DM[k0+1];
+var WORDS='가방 가위 가수 가족 나무 나비 나라 나이 다리 다람쥐 달걀 도시 도서관 두부 라면 라디오 마음 마을 마트 모자 무지개 문어 미소 바다 바람 바나나 박물관 방학 별빛 보석 부엌 비누 사랑 사탕 산책 서점 소금 소나무 수박 시계 시장 신발 아침 안경 어깨 여름 영화 오이 오리 우산 우유 유리 은행 이웃 인사 자유 자석 장난감 저녁 전화 정원 주먹 지도 차례 창문 책상 천둥 친구 카메라 카페 커피 코끼리 타조 토끼 파도 포도 풍선 하늘 학교 한강 해바라기 호랑이 화분 휴지 기억 거울 고양이 구름 기타 기름 노래 노트 눈사람 달력 대나무 동물 두꺼비 이야기 이름 이모 이불 인형 형광등 등대 대문 문제 제주도 도토리 리듬 음악 악기 공책 책가방 방석 석류 유자 자두 야구 구두 부채 채소 소풍 풍경 경찰 찰떡 떡볶이 이슬 사과 과자 자전거 거북이 불고기 기차 차표 표범 범인 형제 제비 비행기 기린 스키 키위 장미 미역 역사 사자 자동차 돌고래 고구마 구급차 기러기 기와 와플 플라타너스 스웨터 터널 널뛰기 기념일 일기장 장갑 갑옷 옷장 장작 작은방 방귀 귀걸이 이사 사이다 다이아몬드 드라마 마당 당근 근육 육회 회사 사무실 실내화 화장실 실로폰 폰케이스'.split(' '),BASE=WORDS.length;
+try{JSON.parse(localStorage.getItem('pureai.words')||'[]').forEach(function(w){if(WORDS.indexOf(w)<0)WORDS.push(w)})}catch(e){}
+function saveW(){try{localStorage.setItem('pureai.words',JSON.stringify(WORDS.slice(BASE)))}catch(e){}}
+function nxt(x){var c=x[x.length-1],n=0;WORDS.forEach(function(y){if(y[0]===c||y[0]===M[c])n++});return n}
+function hint(c){return '‘'+c+'’'+(M[c]?' 또는 ‘'+M[c]+'’':'')}
+function chain(t){var w=t.trim().replace(/[ ]+/g,'');
+ if(/^(그만|끝|종료|포기)/.test(w)){var n0=game.n;game=null;return '끝말잇기를 마쳤어요. 총 '+n0+'번 이었어요!'}
+ if(!/^[가-힣]{2,}$/.test(w))return '두 글자 이상의 한글 단어를 말해 주세요.';
+ if(game.last&&[game.last,M[game.last]].indexOf(w[0])<0)return hint(game.last)+'(으)로 시작해야 해요!';
+ if(game.used[w])return '이미 나온 단어예요!';
+ game.used[w]=1;game.n++;if(WORDS.indexOf(w)<0){WORDS.push(w);saveW()}
+ var c=w[w.length-1],cs=[c,M[c]];
+ var cand=WORDS.filter(function(x){return !game.used[x]&&cs.indexOf(x[0])>=0});
+ if(!cand.length){game=null;return '으아, 더 생각나는 단어가 없어요. 제가 졌어요! 🏆'}
+ cand.sort(function(a,b){return nxt(a)-nxt(b)});
+ var p=cand[Math.floor(Math.random()*Math.min(3,cand.length))];
+ game.used[p]=1;game.last=p[p.length-1];game.n++;
+ return p+'  → 다음은 '+hint(game.last)+'!'}
+var QZ=[['대한민국의 수도는?','서울'],['1년은 몇 개월?','12|열두|열두달'],['물이 얼면 무엇이 될까요?','얼음'],['태양계에서 가장 큰 행성은?','목성'],['한글을 만든 왕은?','세종대왕|세종'],['무지개는 몇 가지 색일까요?','7|일곱'],['거미의 다리는 몇 개?','8|여덟'],['사과는 영어로?','apple'],['세계에서 가장 높은 산은?','에베레스트|에베레스트산'],['물의 화학식은?','h2o'],['김치는 영어로?','kimchi'],['1 더하기 1은?','2|이'],['우리나라 국기는?','태극기'],['하루는 몇 시간?','24|스물네']];
+function ask(){game.c=QZ[Math.floor(Math.random()*QZ.length)];return 'Q. '+game.c[0]}
+function quiz(t){var n=norm(t);if(/^(그만|끝|종료|stop)/.test(n)){var r='퀴즈 종료! 점수 '+game.s+'/'+game.n+' 🎉';game=null;return r}
+ game.n++;var ok=game.c[1].split('|').some(function(a){return norm(a)===n});if(ok)game.s++;
+ return (ok?'정답! 👏':'아쉬워요. 정답은 '+game.c[1].split('|')[0]+'.')+'\n'+ask()}
+function calc(s){var i=0;s=s.replace(/[ ]+/g,'');function e(){var v=tm();while(s[i]==='+'||s[i]==='-'){var o=s[i++],r=tm();v=o==='+'?v+r:v-r}return v}
+ function tm(){var v=f();while(s[i]==='*'||s[i]==='/'){var o=s[i++],r=f();v=o==='*'?v*r:v/r}return v}
+ function f(){if(s[i]==='('){i++;var v=e();i++;return v}if(s[i]==='-'){i++;return -f()}var m=s.slice(i).match(/^[0-9]+([.][0-9]+)?/);if(!m)throw 0;i+=m[0].length;return parseFloat(m[0])}
+ var v=e();if(i!==s.length||!isFinite(v))throw 0;return v}
+function special(t){var n=norm(t),R=function(a){return a[Math.floor(Math.random()*a.length)]};
+ if(game)return game.type==='chain'?chain(t):quiz(t);
+ var sm=t.trim().match(/^(검색|search)[: ]+(.+)$/i)||t.trim().match(/^(.+?)[ ]+(검색해 ?줘|검색)$/);if(sm){var sq=/^(검색|search)$/i.test(sm[1])?sm[2]:sm[1];webSearch(sq,links(sq),true);return '@'}
+ if(/^(우리 )?끝말잇기( ?(하자|할래|해|해줘|시작|할까|놀이))?$|^(play )?word chain$/.test(n)){game={type:'chain',used:{},n:0};var p=R(WORDS);game.used[p]=1;game.last=p[p.length-1];return '끝말잇기 시작! 제가 먼저 할게요.\n'+p+' → '+hint(game.last)+'(으)로 이어 주세요. (그만하려면 ‘그만’)'}
+ if(/^(퀴즈|퀴즈 ?(내줘|내|풀래|하자|시작)|quiz|quiz me)$/.test(n)){game={type:'quiz',n:0,s:0};return '퀴즈 시작! (그만하려면 ‘그만’)\n'+ask()}
+ if(n==='가위바위보')return '가위, 바위, 보 중에 하나를 내 주세요!';
+ var rp=['가위','바위','보'],u=rp.indexOf(n);if(u>=0){var c=Math.floor(Math.random()*3);return '저는 '+rp[c]+'! '+(u===c?'비겼어요.':(u-c+3)%3===1?'제가 졌어요. 🙌':'제가 이겼어요! 😎')}
+ if(/^(주사위|주사위 굴려줘|roll a dice|roll dice)$/.test(n))return '🎲 '+(1+Math.floor(Math.random()*6));
+ if(/^(동전|동전 던져줘|coin|flip a coin)$/.test(n))return R(['앞면 (heads)','뒷면 (tails)']);
+ if(/^[0-9 +*/().x×÷-]+$/.test(t)&&/[0-9]/.test(t)&&/[+*/x×÷-]/.test(t.replace(/^[ -]+/,''))){try{return '= '+Math.round(calc(t.replace(/[x×]/g,'*').replace(/÷/g,'/'))*1e9)/1e9}catch(e){}}
+ return null}
+
+function load(){try{var s=localStorage.getItem(KEY);if(s){var j=JSON.parse(s);if(Array.isArray(j)&&j.length){D=j;mergeSeed();return}}}catch(e){}
+D=SEED.map(function(p){return{q:p[0],a:p[1]}})}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){}}
+
+function norm(t){return String(t).toLowerCase().replace(/[^\p{L}\p{N}\s]/gu," ").replace(/\s+/g," ").trim()}
+function feats(t){
+ var f={},ws=norm(t).split(" ").filter(Boolean);
+ ws.forEach(function(w){
+  add(f,"w:"+w,2);
+  var p="<"+w+">";
+  for(var n=2;n<=3;n++){for(var i=0;i+n<=p.length;i++)add(f,"c:"+p.substr(i,n),1)}
+  if(/[\uAC00-\uD7A3]/.test(w)){for(var k=0;k<w.length;k++)add(f,"s:"+w[k],0.6)}
+ });
+ return f}
+function add(o,k,v){o[k]=(o[k]||0)+v}
+
+function build(){
+ idf={};docs=D.map(function(d){return feats(d.q)});
+ docs.forEach(function(f){for(var k in f)idf[k]=(idf[k]||0)+1});
+ var N=D.length+1;for(var k in idf)idf[k]=Math.log(N/(1+idf[k]))+1;
+ docs=docs.map(vec);DJ=D.map(function(d){return jamo(norm(d.q))})}
+function vec(f){var v={},s=0;for(var k in f){var x=f[k]*(idf[k]||Math.log(D.length+2)+1);v[k]=x;s+=x*x}
+ v._n=Math.sqrt(s)||1;return v}
+function cos(a,b){var s=0,x=a._n<b._n?a:b,y=x===a?b:a;for(var k in x){if(k!=="_n"&&y[k])s+=x[k]*y[k]}return s/(a._n*b._n)}
+
+function answer(text){
+ if(!D.length)return null;
+ var q=vec(feats(text)),best=0,idx=[],tj=jamo(norm(text));
+ docs.forEach(function(d,i){var s=Math.max(cos(q,d),fz(tj,i));if(s>best+1e-9){best=s;idx=[i]}else if(Math.abs(s-best)<1e-9)idx.push(i)});
+ if(best<0.42)return{score:best};
+ var i=idx[Math.floor(Math.random()*idx.length)];
+ return{score:best,sim:best,i:i,a:D[i].a,q:D[i].q}}
+
+function isKo(t){return /[\uAC00-\uD7A3]/.test(t)}
+function learn(q,a){q=q.trim();a=a.trim();if(!q||!a)return false;
+ var dup=D.some(function(d){return norm(d.q)===norm(q)&&d.a===a});if(dup)return false;
+ D.push({q:q,a:a});return true}
+function commit(){save();build();stat()}
+function stat(){var ko=0,en=0;D.forEach(function(d){isKo(d.q)?ko++:en++});
+ document.getElementById("stat").textContent="지식 "+D.length+" · 한글 "+ko+" · EN "+en}
+
+var log=document.getElementById("log");
+function say(t,who,extra){var m=document.createElement("div");m.className="m "+who;m.textContent=t;
+ if(extra)m.appendChild(extra);log.appendChild(m);log.scrollTop=log.scrollHeight;return m}
+
+function wrongBtn(q,i){var s=document.createElement("small"),b=document.createElement("button");
+ b.textContent="👎 틀렸어요 / wrong";
+ b.onclick=function(){var d=D[i];if(d&&d.q===q.match){D.splice(i,1);commit()}
+  pending={q:q.text};b.disabled=true;
+  say(isKo(q.text)?"죄송해요. 올바른 답을 알려 주세요.":"Sorry! What should I have said?","ai")};
+ s.appendChild(b);return s}
+
+function send(){
+ var inp=document.getElementById("inp"),t=inp.value.trim();if(!t)return;inp.value="";
+ say(t,"me");if(!pending){var sp=special(t);if(sp){if(sp!=="@")say(sp,"ai");return}}
+ if(pending){var p=pending;pending=null;learn(p.q,t);commit();
+  say(isKo(p.q)?"배웠어요! 이제 \""+p.q+"\"에 그렇게 대답할게요. 🎓":"Learned! I’ll answer that from now on. 🎓","ai");return}
+ var r=answer(t);
+ if(r&&r.a!==undefined){var q={text:t,match:r.q};say((r.sim<0.9&&norm(r.q)!==norm(t)?"(‘"+r.q+"’(으)로 이해했어요)\n":"")+r.a,"ai",wrongBtn(q,r.i))}
+ else{pending={q:t};var sl=links(t);webSearch(t,sl);return;say(isKo(t)?"아직 모르는 말이에요. 뭐라고 대답하면 좋을까요? 다음 메시지로 알려 주세요. 아래 검색 링크로 찾은 답을 알려 주셔도 돼요.":"I don’t know that yet. What should I answer? Tell me in your next message. You can use the search links below.","ai",sl)}}
+
+document.getElementById("send").onclick=send;
+document.getElementById("inp").addEventListener("keydown",function(e){if(e.key==="Enter"&&!e.isComposing)send()});
+
+// tabs
+Array.prototype.forEach.call(document.querySelectorAll("nav button"),function(b){b.onclick=function(){
+ Array.prototype.forEach.call(document.querySelectorAll("nav button"),function(x){x.classList.toggle("on",x===b)});
+ Array.prototype.forEach.call(document.querySelectorAll(".pane"),function(p){p.classList.toggle("on",p.id===b.dataset.t)});
+ if(b.dataset.t==="data")render()}});
+
+// train
+document.getElementById("tadd").onclick=function(){var q=document.getElementById("tq"),a=document.getElementById("ta");
+ if(learn(q.value,a.value)){commit();q.value="";a.value="";q.focus()}};
+document.getElementById("badd").onclick=function(){var n=0;
+ document.getElementById("bulk").value.split("\n").forEach(function(l){var m=l.split(/=>|\|/);if(m.length>=2&&learn(m[0],m.slice(1).join("=>")))n++});
+ if(n){commit();document.getElementById("bulk").value=""}
+ document.getElementById("bmsg").textContent=n+"개 학습 · learned "+n};
+
+// data
+function render(){var f=norm(document.getElementById("flt").value),h=document.getElementById("list");h.innerHTML="";
+ D.forEach(function(d,i){if(f&&norm(d.q+" "+d.a).indexOf(f)<0)return;
+  var r=document.createElement("div"),c=document.createElement("div"),x=document.createElement("button");
+  r.className="item";var b=document.createElement("b");b.textContent="Q ";c.appendChild(b);c.appendChild(document.createTextNode(d.q+"\n"));
+  var b2=document.createElement("b");b2.textContent="A ";c.appendChild(b2);c.appendChild(document.createTextNode(d.a));
+  x.textContent="✕";x.onclick=function(){D.splice(i,1);commit();render()};r.appendChild(c);r.appendChild(x);h.appendChild(r)})}
+document.getElementById("flt").oninput=render;
+document.getElementById("exp").onclick=function(){var a=document.createElement("a");
+ a.href="data:application/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(D,null,1));a.download="pure-ai-knowledge.json";a.click();
+ try{navigator.clipboard.writeText(JSON.stringify(D))}catch(e){}};
+document.getElementById("imp").onclick=function(){document.getElementById("file").click()};
+document.getElementById("file").onchange=function(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();
+ r.onload=function(){try{var j=JSON.parse(r.result);j.forEach(function(p){if(p&&p.q&&p.a)learn(p.q,p.a)});commit();render()}catch(x){}};r.readAsText(f)};
+document.getElementById("rst").onclick=function(){if(confirm("모든 학습을 지우고 처음 상태로 되돌릴까요?")){
+ D=SEED.map(function(p){return{q:p[0],a:p[1]}});commit();render()}};
+
+load();build();stat();
+say("안녕하세요! 저는 한로드예요. API 없이 이 페이지 안에서만 배우는 AI예요. 한글과 영어로 말을 걸고, 모르는 건 가르쳐 주세요.\nHi! I’m Hanrod. I learn only inside this page, no API. Talk to me in Korean or English, and teach me what I don’t know.","ai");
+})();
+</script>
+</body>
+</html>
